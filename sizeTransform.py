@@ -11,7 +11,7 @@ def resize(img,scalex,scaley):
         return math.floor(y/scaley),math.floor(x/scalex)
     newimage = np.zeros((newy,newx,img.shape[2]), dtype=np.uint8)
     def transform(img,x1,x2,y1,y2,x,y):
-        print((x1,x2,y1,y2,x,y))
+        # print((x1,x2,y1,y2,x,y))
         x=(x-x1)/(x2-x1)
         y=(y-y1)/(y2-y1)
         newcol=(img[y1][x1]*(1-x)*(1-y)
@@ -26,6 +26,8 @@ def resize(img,scalex,scaley):
             x2=min(math.ceil(x+0.001),imgx-1)
             y1=math.floor(y)
             y2=min(math.ceil(y+0.001),imgy-1)
+            if x1==x2 : x1-=1
+            if y1==y2 : y1-=1
             newimage[i][j]=transform(img,x1,x2,y1,y2,x,y)
     return newimage
 if __name__=="__main__":
@@ -34,7 +36,7 @@ if __name__=="__main__":
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     plt.subplot(131)
     plt.imshow(img)
-    newimg=resize(img,0.5,0.5)
+    newimg=resize(img,2,2)
     plt.subplot(132)
     plt.imshow(newimg)
     newimg = resize(img, 0.1, 0.1)
