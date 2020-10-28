@@ -36,7 +36,7 @@ if __name__=="__main__":
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     plt.subplot(131)
     plt.imshow(img)
-    newimg=resize(img,0.5,0.1)
+    newimg=resize(img,0.5,0.5)
     plt.subplot(132)
     plt.imshow(newimg)
     newimg = resize(img, 0.1, 0.5)

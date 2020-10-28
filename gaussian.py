@@ -30,15 +30,15 @@ def gen_gaussian_kernel(sigma):
     return kernel
 
 
-def conv2(kernel, img, center):
+def conv2(kernel, img):
     h, w, channel = img.shape
-    center1=kernel.shape[0]
-    center2=kernel.shape[1]
+    center1=kernel.shape[0]//2
+    center2=kernel.shape[1]//2
     for c in range(channel):
         imgc = img[..., c]
-        for i in range(center, h - center):
-            for j in range(center, w - center):
-                col = conv2_pixel(kernel, imgc, i - center, j - center)
+        for i in range(center1, h - center1):
+            for j in range(center2, w - center2):
+                col = conv2_pixel(kernel, imgc, i - center1, j - center2)
                 imgc[i, j] = round(col)
     return img
 
@@ -66,8 +66,8 @@ def gaussianFast(img,sigma):
     kernel2=kernel.reshape((1,kernel.shape[0]))
     center = kernel.shape[0] // 2
     img = border_replicate(img, center)
-    img = conv2(kernel1, img, center)
-    img = conv2(kernel2, img, center)
+    img = conv2(kernel1, img)
+    img = conv2(kernel2, img)
     img = img[center:center + h, center:center + w, ...]
     return img
 
@@ -76,7 +76,7 @@ def gaussian(img, sigma):
     kernel = gen_gaussian_kernel(sigma)
     center = kernel.shape[0] // 2
     img = border_replicate(img, center)
-    img = conv2(kernel, img, center)
+    img = conv2(kernel, img)
     img = img[center:center + h, center:center + w, ...]
     return img
 
@@ -151,7 +151,7 @@ def middleFilter(img,size):
     return img
 
 if __name__ == "__main__":
-    img = cv2.imread("test.jpg")
+    img = cv2.imread("test2.jpg")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     plt.subplot(231)
     plt.title("origin")
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     plt.title("border*50")
     plt.imshow(imgBorder)
 
-    imgOut =gaussian(img, 1)
+    imgOut =gaussianFast(img, 1)
     plt.subplot(234)
     plt.title("gaussian5x5")
     plt.imshow(imgOut)
