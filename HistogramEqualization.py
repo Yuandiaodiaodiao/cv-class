@@ -10,7 +10,6 @@ def timeShow(fn):
         ans = fn(*args, **kwargs)
         print("%s cost %s second" % (fn.__name__, time.clock() - start))
         return ans
-
     return _wrapper
 
 
