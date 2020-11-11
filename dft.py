@@ -142,6 +142,16 @@ def Testdft():
     print("dft2 fft2")
     print(ans1)
     print(ans2)
+    ans5=np.fft.fftshift(ans1)
+    ans6=fftshift(ans2)
+    print('np.shift shift')
+    print(ans5)
+    print(ans6)
+    ans7=np.fft.ifftshift(ans5)
+    ans8=fftshift(ans6)
+    print('np.ishift ishift')
+    print(ans7)
+    print(ans8)
     ans3 = np.fft.ifft2(ans1)
     ans4 = ifft2d(ans2)
     print("idft2 ifft2")
@@ -205,7 +215,15 @@ def appendFilter(img, filterFunc):
     imgdft = ifft2d(imgdft)
     return imgdft
 
-
+def fftshift(image):
+    h,w=image.shape
+    for i in range(h//2):
+        for j in range(w//2):
+            image[i,j],image[h-i-1,w-j-1]=image[h-i-1,w-j-1],image[i,j]
+    for i in range(h//2,h):
+        for j in range(w//2):
+            image[i,j],image[h-i-1,w-j-1]=image[h-i-1,w-j-1],image[i,j]
+    return image
 import cv2
 import matplotlib.pyplot as plt
 
