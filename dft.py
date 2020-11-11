@@ -215,14 +215,18 @@ def appendFilter(img, filterFunc):
     imgdft = ifft2d(imgdft)
     return imgdft
 
+
+
 def fftshift(image):
+    image=np.copy(image)
     h,w=image.shape
     for i in range(h//2):
         for j in range(w//2):
-            image[i,j],image[h-i-1,w-j-1]=image[h-i-1,w-j-1],image[i,j]
+            # image[i,j]=complex(0)
+            image[i,j],image[h//2+i,w//2+j]=image[h//2+i,w//2+j],image[i,j]
     for i in range(h//2,h):
         for j in range(w//2):
-            image[i,j],image[h-i-1,w-j-1]=image[h-i-1,w-j-1],image[i,j]
+            image[i,j],image[i-h//2,w//2+j]=image[i-h//2,w//2+j],image[i,j]
     return image
 import cv2
 import matplotlib.pyplot as plt
@@ -246,17 +250,21 @@ if __name__ == "__main__":
     # imgdft=dft2d(img)
     imgdft = fft2d(img)
 
-    imgdft = np.fft.fftshift(imgdft)
+    imgdft = fftshift(imgdft)
+    # imgdft=ifftshift(imgdft)
     imgabs = np.log(np.abs(imgdft))
 
     imgangle = np.angle(imgdft)
-
+    np.fft.ifftshift=fftshift
     plt.subplot(332)
     plt.title('amplitude')
     plt.imshow(reresize(imgabs), cmap='gray')
     plt.subplot(333)
     plt.title('phase')
     plt.imshow(reresize(imgangle), cmap='gray')
+
+    plt.subplot(336)
+    plt.imshow(reresize(np.real(ifft2d(fftshift(np.copy(imgdft))))),cmap='gray')
 
     lowpassimg = imgdft * idealpass(imgdft, 20, 0)
     lowpassimg = np.real(ifft2d(np.fft.ifftshift(lowpassimg)))
