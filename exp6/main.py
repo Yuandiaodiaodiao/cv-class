@@ -132,8 +132,8 @@ if __name__ == "__main__":
     NetTitle="fcdensenet121"
     #爆显存了就缩一缩
     train_batch_size=512
-    test_batch_size=128
-
+    test_batch_size=512
+    testrate=0
     try:
 
         save = torch.load(f'./model/{NetTitle}Newest')
@@ -152,9 +152,17 @@ if __name__ == "__main__":
         epoch = 0
 
 
-    rate1, rate2 = 0, 0
+    rate1, rate2 = test()
+    testCorrectMax=rate1
     while rate1 < 0.9 or rate2 < 0.95:
         # 给👴训练到合格为止
+
         train()
         rate1, rate2 = test()
+
+        if rate1 > testCorrectMax:
+            print("新的正确率")
+            torch.save({"model": model, "optimizer": optimizer.state_dict(), "epoch": epoch},
+                       f'./model/{NetTitle}Best')
+
     pass
