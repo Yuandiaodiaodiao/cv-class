@@ -1,6 +1,6 @@
 import torchvision
 import time
-
+writer=None
 
 # 网络模型
 def timeShow(fn):
@@ -47,6 +47,7 @@ def train():
     def perEpoch(epoch):
         print(f"epoch{epoch}")
         showPercent = round(len(train_loader))
+        avgloss=0
         for batch_idx, (data, target) in enumerate(train_loader):
             # gpu加速
             data, target = data.cuda(), target.cuda()
@@ -61,10 +62,14 @@ def train():
             scheduler.step(loss)
             # 调参
             optimizer.step()
+            avgloss+=loss.item()
             if batch_idx % showPercent == 0:
                 print(f'{epoch} {batch_idx}/{len(train_loader)} {loss.item()}  ')
         # torch.save(model, f'./model/resnet50{epoch}')
         # torch.save(model, f'./model/resnet50Newest')
+        avgloss/=len(train_loader)
+        writer.add_scalar(NetTitle,avgloss,global_step=epoch)
+
         print("start save")
         torch.save({"model": model, "optimizer": optimizer.state_dict(), "epoch": epoch}, f'./model/{NetTitle}Newest')
         print("save success")
@@ -96,7 +101,7 @@ def test():
                 totalImg += target.size(0)
                 if index % showPercent == 0:
                     print(f"{title}进度 {math.floor(index / total * 100)}%")
-            print(f"{title}正确率 {correct}/{totalImg} = {round(correct / totalImg * 100)}%")
+            print(f"{title}正确率 {correct}/{totalImg} = {round(correct / totalImg * 1000)/10}%")
             return correct / totalImg
 
     rate1 = dotest("测试集", test_loader)
@@ -106,22 +111,34 @@ def test():
 
 
 if __name__ == "__main__":
-    import resnet18
+    try:
+        from tensorboardX import SummaryWriter
 
+        writer = SummaryWriter()
+    except:
+        pass
+
+    import resnet18
+    import preact_resnet
     # 带预训练的初始模型
     # modelNetTorch = torchvision.models.resnet18(pretrained=True)
-    modelNetTorch = resnet18.ResNet18()
+    # modelNetTorch = resnet18.ResNet18()
+    modelNetTorch = preact_resnet.PreActResNet18()
     try:
 
         modelNetTorch.classifier = nn.Linear(modelNetTorch.classifier.in_features, 10)
     except:
-        modelNetTorch.fc = nn.Linear(modelNetTorch.fc.in_features, 10)
+        try:
+            modelNetTorch.fc = nn.Linear(modelNetTorch.fc.in_features, 10)
+        except:
+            modelNetTorch.linear = nn.Linear(modelNetTorch.linear.in_features, 10)
+
 
     modelNet = modelNetTorch
     # 存档名字
-    NetTitle = "ResNet18"
+    NetTitle = "PreActResNet18"
     # 爆显存了就缩一缩
-    train_batch_size = 256
+    train_batch_size = 64
     test_batch_size = 256
     lr = 0.001
     testrate = 0
@@ -134,15 +151,18 @@ if __name__ == "__main__":
     testDataset = datasets.CIFAR10('./train', train=False, download=True, transform=testTransform)
     test_loader = torch.utils.data.DataLoader(testDataset, batch_size=test_batch_size,num_workers=2)
     #训练集测试
-    # testTrainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=testTransform)
-    # test_train_loader = torch.utils.data.DataLoader(testTrainDataset, batch_size=test_batch_size,num_workers=2)
+    testTrainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=testTransform)
+    test_train_loader = torch.utils.data.DataLoader(testTrainDataset, batch_size=test_batch_size,num_workers=2)
 
 
     def changegrad(net):
         try:
             fclayer=net.classifier
         except:
-            fclayer = net.fc
+            try:
+                fclayer = net.fc
+            except:
+                fclayer=net.linear
 
         ignored_params = list(map(id, fclayer.parameters()))
         base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
@@ -177,10 +197,10 @@ if __name__ == "__main__":
                                      weight_decay=0.00008)
         epoch = 0
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.99,
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.8,
                                                            patience=2 * len(train_loader), verbose=True,
                                                            threshold=0.0001, threshold_mode='rel', cooldown=1,
-                                                           min_lr=0.0001, eps=1e-08)
+                                                           min_lr=0, eps=1e-08)
 
     rate1, rate2 = test()
     testCorrectMax = rate1
