@@ -32,12 +32,9 @@ criterion = nn.CrossEntropyLoss()
 from torch.autograd import Variable
 
 
-
-
 def train():
     global epoch
-    trainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=imageTransform)
-    train_loader = torch.utils.data.DataLoader(trainDataset, batch_size=train_batch_size,pin_memory=True,num_workers=0)
+
     model.train()
 
     @timeShow
@@ -67,7 +64,7 @@ def train():
         torch.save({"model": model, "optimizer": optimizer.state_dict(), "epoch": epoch}, f'./model/{NetTitle}Newest')
         print("save success")
     # 跑n遍训练集
-    for i in range(5):
+    for i in range(1):
 
         perEpoch(epoch)
         epoch += 1
@@ -83,7 +80,7 @@ def test():
             correct = 0  # 初始化预测正确的数据个数为0
             total = len(loader)
             # 打log的概率
-            showPercent = round(total * 0.1)
+            showPercent = round(total * 0.25)
             totalImg = 0
             for index, (data, target) in enumerate(loader):
                 data, target = data.cuda(), target.cuda()
@@ -97,12 +94,7 @@ def test():
             print(f"{title}正确率 {correct}/{totalImg} = {round(correct / totalImg * 100)}%")
             return correct / totalImg
 
-    testDataset = datasets.CIFAR10('./train', train=False, download=True, transform=imageTransform)
 
-    test_loader = torch.utils.data.DataLoader(testDataset, batch_size=test_batch_size)
-
-    testTrainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=imageTransform)
-    test_train_loader = torch.utils.data.DataLoader(testTrainDataset, batch_size=test_batch_size)
 
     rate1 = dotest("测试集", test_loader)
     # rate2 = dotest("训练集", test_train_loader)
@@ -113,7 +105,7 @@ def test():
 if __name__ == "__main__":
 
     #带预训练的初始模型
-    modelNetTorch = torchvision.models.densenet121(pretrained=True)
+    modelNetTorch = torchvision.models.densenet169(pretrained=False,num_classes=10)
 
     #自己添油加醋
     class Net(nn.Module):
@@ -123,17 +115,29 @@ if __name__ == "__main__":
             self.fc = nn.Linear(1000, 10)
         def forward(self, x):
             x = self.net(x)
-            x = self.fc(x)
+            # x = self.fc(x)
             return x
 
     #套娃进自己的模型
     modelNet=Net(modelNetTorch)
+    modelNet=modelNetTorch
     #存档名字
-    NetTitle="fcdensenet121"
+    NetTitle="wide_resnet101_2"
     #爆显存了就缩一缩
     train_batch_size=512
     test_batch_size=512
     testrate=0
+
+    trainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=imageTransform)
+    train_loader = torch.utils.data.DataLoader(trainDataset, batch_size=train_batch_size, pin_memory=True,
+                                               num_workers=0)
+
+    testDataset = datasets.CIFAR10('./train', train=False, download=True, transform=imageTransform)
+
+    test_loader = torch.utils.data.DataLoader(testDataset, batch_size=test_batch_size)
+
+    testTrainDataset = datasets.CIFAR10('./train', train=True, download=True, transform=imageTransform)
+    test_train_loader = torch.utils.data.DataLoader(testTrainDataset, batch_size=test_batch_size)
     try:
 
         save = torch.load(f'./model/{NetTitle}Newest')
@@ -161,6 +165,7 @@ if __name__ == "__main__":
         rate1, rate2 = test()
 
         if rate1 > testCorrectMax:
+            testCorrectMax=rate1
             print("新的正确率")
             torch.save({"model": model, "optimizer": optimizer.state_dict(), "epoch": epoch},
                        f'./model/{NetTitle}Best')
